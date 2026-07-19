@@ -1,0 +1,14 @@
+node_modules
+dist
+.next
+.turbo
+*.db
+*.db-journal
+.env
+.env.local
+.DS_Store
+data/
+*.log
+.bay/
+host/.bay-local/
+connect/.bay-local/
