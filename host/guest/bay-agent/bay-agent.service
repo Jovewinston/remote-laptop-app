@@ -1,0 +1,18 @@
+[Unit]
+Description=Bay guest agent (Yep cockpit + healthz)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=bay
+Group=bay
+WorkingDirectory=/home/bay
+Environment=HOME=/home/bay
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/node /home/bay/bay-agent/healthz.js
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

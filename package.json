@@ -1,0 +1,19 @@
+{
+  "name": "bay",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Invite-only Mac compute marketplace for Claude & Codex",
+  "scripts": {
+    "dev": "bash scripts/dev.sh",
+    "dev:api": "pnpm --filter @bay/api dev",
+    "dev:web": "pnpm --filter @bay/web dev",
+    "dev:host": "pnpm --filter @bay/host start",
+    "doctor": "pnpm --filter @bay/host run doctor",
+    "build": "pnpm -r run build",
+    "db:seed": "pnpm --filter @bay/api seed"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@9.15.0"
+}

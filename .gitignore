@@ -12,3 +12,4 @@ data/
 .bay/
 host/.bay-local/
 connect/.bay-local/
+*.tsbuildinfo

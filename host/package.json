@@ -1,0 +1,21 @@
+{
+  "name": "@bay/host",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "bay-host": "./src/cli.js"
+  },
+  "scripts": {
+    "dev": "node src/cli.js serve",
+    "start": "node src/cli.js serve",
+    "doctor": "node src/cli.js doctor",
+    "guest:build": "bash guest/build.sh",
+    "smoke:sandbox": "node src/smoke-sandbox.js"
+  },
+  "dependencies": {
+    "@bay/shared": "workspace:*",
+    "@hono/node-server": "^1.14.1",
+    "hono": "^4.7.5"
+  }
+}

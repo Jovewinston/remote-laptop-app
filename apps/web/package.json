@@ -1,0 +1,22 @@
+{
+  "name": "@bay/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -H 127.0.0.1 -p 3200",
+    "build": "next build",
+    "start": "next start -H 127.0.0.1 -p 3200"
+  },
+  "dependencies": {
+    "@bay/shared": "workspace:*",
+    "next": "^15.2.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "@types/react": "^19.0.12",
+    "@types/react-dom": "^19.0.4",
+    "typescript": "^5.8.2"
+  }
+}
