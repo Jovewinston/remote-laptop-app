@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bay Host</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600&family=Fraunces:opsz,wght@9..144,600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #e8eef2;
+        --ink: #14202b;
+        --muted: #5a6b78;
+        --accent: #0f6e56;
+        --line: #c5d2dc;
+        --card: #f7fafc;
+        --warn: #9a5b14;
+      }
+      body {
+        margin: 0;
+        font-family: Figtree, sans-serif;
+        color: var(--ink);
+        background: linear-gradient(180deg, #e8eef2, #d5e0e8);
+        min-height: 100vh;
+      }
+      main {
+        width: min(560px, calc(100% - 2rem));
+        margin: 0 auto;
+        padding: 2rem 0 3rem;
+      }
+      h1 {
+        font-family: Fraunces, Georgia, serif;
+        font-size: 2.4rem;
+        letter-spacing: -0.03em;
+        margin: 0 0 0.5rem;
+      }
+      p {
+        color: var(--muted);
+        line-height: 1.45;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 1.2rem;
+        padding: 1.25rem;
+        margin: 1rem 0;
+      }
+      .card strong {
+        display: block;
+        margin-bottom: 0.35rem;
+      }
+      label {
+        display: grid;
+        gap: 0.35rem;
+        margin: 0.75rem 0;
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+      input {
+        border: 1px solid var(--line);
+        border-radius: 0.75rem;
+        padding: 0.7rem 0.85rem;
+        font: inherit;
+      }
+      button,
+      a.btn {
+        display: inline-block;
+        border: 0;
+        border-radius: 999px;
+        padding: 0.7rem 1.1rem;
+        background: var(--accent);
+        color: white;
+        font: inherit;
+        cursor: pointer;
+        text-decoration: none;
+        margin-right: 0.4rem;
+        margin-top: 0.4rem;
+      }
+      button.secondary,
+      a.btn.secondary {
+        background: white;
+        color: var(--ink);
+        border: 1px solid var(--line);
+      }
+      .ok {
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .bad {
+        color: #9b2c2c;
+        font-weight: 600;
+      }
+      .warn {
+        color: var(--warn);
+        font-weight: 600;
+      }
+      pre {
+        white-space: pre-wrap;
+        background: white;
+        border-radius: 0.8rem;
+        padding: 0.8rem;
+        border: 1px solid var(--line);
+        font-size: 0.82rem;
+        line-height: 1.45;
+      }
+      details {
+        margin-top: 0.75rem;
+      }
+      details summary {
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--ink);
+      }
+      code {
+        font-size: 0.85em;
+      }
+      .hint {
+        font-size: 0.9rem;
+        margin-top: 0.65rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Bay Host</h1>
+      <p>
+        Keep this window open while lending. Paste your token from the website
+        Lend page, connect Tailscale, then turn Available on.
+      </p>
+
+      <div class="card">
+        <strong>1. Sign in</strong>
+        <p>Copy the host token from Bay → Lend, paste it here, and Save.</p>
+        <label>
+          API URL
+          <input id="apiUrl" />
+        </label>
+        <label>
+          Host token
+          <input id="hostToken" />
+        </label>
+        <button id="save">Save</button>
+      </div>
+
+      <div class="card">
+        <strong>2. Tailscale</strong>
+        <p id="tsStatus">Checking…</p>
+        <p class="hint">
+          Friends connect without the same Wi‑Fi. Install, sign in with the same
+          tailnet as your renters, then recheck.
+        </p>
+        <a
+          class="btn secondary"
+          href="https://tailscale.com/download/mac"
+          target="_blank"
+          rel="noreferrer"
+          >Install Tailscale</a
+        >
+        <button class="secondary" id="recheck">I’ve signed in — recheck</button>
+      </div>
+
+      <div class="card">
+        <strong>3. This Mac</strong>
+        <pre id="doctor">Loading…</pre>
+        <p id="powerHint"></p>
+      </div>
+
+      <div class="card">
+        <strong>4. Sandbox</strong>
+        <p id="sandboxStatus">Checking…</p>
+        <p class="hint" id="sandboxHint"></p>
+        <details id="vmDetails">
+          <summary>Optional: sealed Linux VM</summary>
+          <p class="hint">
+            Stronger isolation: each job runs in a disposable Linux guest (Tart).
+            Needs Apple Silicon and ~40&nbsp;GB free <em>storage</em>. Renters
+            sign into their own Claude/Codex — your Keychain is not used.
+          </p>
+          <pre id="vmCommands">brew install cirruslabs/cli/tart cirruslabs/cli/sshpass
+cd /path/to/bay
+pnpm --filter @bay/host guest:build
+export BAY_SANDBOX_BACKEND=vm
+pnpm --filter @bay/host start</pre>
+          <p class="hint">
+            Full walkthrough is also on the website under Lend → “Optional: sealed Linux VM”.
+          </p>
+        </details>
+      </div>
+
+      <div class="card">
+        <strong>5. Sharing</strong>
+        <p id="shareStatus">Off</p>
+        <p class="hint">
+          When Available, friends can reserve this Mac on Borrow. Pause anytime.
+        </p>
+        <button id="toggleShare">Turn Available on</button>
+      </div>
+    </main>
+    <script>
+      async function api(path, opts) {
+        const res = await fetch(path, {
+          headers: { "Content-Type": "application/json" },
+          ...opts,
+        });
+        return res.json();
+      }
+
+      async function refresh() {
+        const state = await api("/api/state");
+        document.getElementById("apiUrl").value = state.apiUrl || "";
+        document.getElementById("hostToken").value = state.hostToken || "";
+        document.getElementById("doctor").textContent = state.doctor;
+        const ts = state.health;
+        const el = document.getElementById("tsStatus");
+        if (ts.tailscaleConnected) {
+          el.innerHTML =
+            '<span class="ok">✓ Connected</span> ' +
+            (ts.tailscaleHostname || ts.tailscaleIp || "");
+        } else if (ts.tailscaleInstalled) {
+          el.innerHTML =
+            '<span class="bad">Installed, not connected</span> — open Tailscale and sign in.';
+        } else {
+          el.innerHTML =
+            '<span class="bad">Not installed</span> — install Tailscale, then recheck.';
+        }
+        document.getElementById("powerHint").textContent = ts.onPower
+          ? "On charger — good for lending."
+          : "Plug in your Mac while lending so it doesn’t sleep.";
+
+        const sb = document.getElementById("sandboxStatus");
+        const hint = document.getElementById("sandboxHint");
+        const backend = ts.sandboxBackend || "folder";
+        if (backend === "vm") {
+          if (ts.tartAvailable && ts.goldenImageReady) {
+            sb.innerHTML = '<span class="ok">✓ Sealed Linux VM ready</span>';
+            hint.textContent =
+              "New reservations clone bay-golden, run inside the guest, then wipe the job VM.";
+          } else if (!ts.tartAvailable) {
+            sb.innerHTML =
+              '<span class="bad">VM mode on — Tart missing</span>';
+            hint.innerHTML =
+              "Install Tart, then build the golden image (commands below). Or unset <code>BAY_SANDBOX_BACKEND</code> to use folder mode.";
+          } else {
+            sb.innerHTML =
+              '<span class="warn">VM mode on — golden image missing</span>';
+            hint.textContent =
+              "Run guest:build once, then restart Host. Expand the section below for commands.";
+          }
+        } else {
+          sb.innerHTML = '<span class="ok">Folder sandbox</span> (default)';
+          hint.textContent =
+            "Jobs use ~/.bay/sandbox on this Mac. Expand below if you want sealed VM mode instead.";
+        }
+
+        document.getElementById("shareStatus").textContent =
+          state.sharing === "available"
+            ? "Available — friends can reserve"
+            : state.sharing === "busy"
+              ? "Busy (session running)"
+              : "Paused";
+        document.getElementById("toggleShare").textContent =
+          state.sharing === "off" ? "Turn Available on" : "Pause sharing";
+      }
+
+      document.getElementById("save").onclick = async () => {
+        await api("/api/config", {
+          method: "POST",
+          body: JSON.stringify({
+            apiUrl: document.getElementById("apiUrl").value,
+            hostToken: document.getElementById("hostToken").value,
+          }),
+        });
+        await refresh();
+      };
+      document.getElementById("recheck").onclick = refresh;
+      document.getElementById("toggleShare").onclick = async () => {
+        await api("/api/sharing", { method: "POST" });
+        await refresh();
+      };
+      refresh();
+      setInterval(refresh, 4000);
+    </script>
+  </body>
+</html>
