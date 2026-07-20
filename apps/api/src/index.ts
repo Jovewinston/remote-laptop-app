@@ -49,13 +49,22 @@ migrate();
 migrateHostsAlwaysAvailable();
 
 const app = new Hono();
-const WEB_ORIGIN = process.env.BAY_WEB_ORIGIN ?? "http://127.0.0.1:3200";
-const PORT = Number(process.env.BAY_API_PORT ?? 8788);
+const WEB_ORIGINS = [
+  ...(process.env.BAY_WEB_ORIGIN ?? "http://127.0.0.1:3200")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
+  "http://localhost:3200",
+  "http://127.0.0.1:3200",
+];
+// Railway sets PORT; keep BAY_API_PORT for local dev.
+const PORT = Number(process.env.PORT ?? process.env.BAY_API_PORT ?? 8788);
+const HOSTNAME = process.env.BAY_API_HOST ?? "0.0.0.0";
 
 app.use(
   "*",
   cors({
-    origin: [WEB_ORIGIN, "http://localhost:3200", "http://127.0.0.1:3200"],
+    origin: WEB_ORIGINS,
     credentials: true,
     allowHeaders: ["Content-Type", "Authorization"],
   })
@@ -984,6 +993,6 @@ app.get("/download/host", (c) => {
   });
 });
 
-serve({ fetch: app.fetch, port: PORT, hostname: "127.0.0.1" }, () => {
-  console.log(`Bay API listening on http://127.0.0.1:${PORT}`);
+serve({ fetch: app.fetch, port: PORT, hostname: HOSTNAME }, () => {
+  console.log(`Bay API listening on http://${HOSTNAME}:${PORT}`);
 });
