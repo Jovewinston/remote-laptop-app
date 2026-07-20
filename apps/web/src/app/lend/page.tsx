@@ -114,19 +114,14 @@ export default function LendPage() {
   const setup = useMemo(() => {
     const registered = Boolean(host?.hostToken);
     const online = Boolean(status?.online);
-    const tailscale = Boolean(status?.tailscale);
     const sharingOn =
       status?.sharing === "available" || status?.sharing === "busy";
     return {
       registered,
       online,
-      tailscale,
       sharingOn,
-      // Step states for the checklist
       step1: registered ? "done" : "active",
-      step2: !registered ? "todo" : online ? "done" : "active",
-      step3: !online ? "todo" : tailscale ? "done" : "active",
-      step4: !tailscale && !online ? "todo" : sharingOn ? "done" : "active",
+      step2: !registered ? "todo" : online || sharingOn ? "done" : "active",
     } as const;
   }, [host, status]);
 
@@ -219,8 +214,9 @@ export default function LendPage() {
             Lender setup
           </h2>
           <p className="meta" style={{ marginBottom: "1.25rem" }}>
-            Do this on the Mac you’re sharing. Keep it plugged in while
-            Available — closing the lid usually sleeps the machine.
+            Register here, then do day-to-day lending in{" "}
+            <strong>Bay Host.app</strong> (Tailscale, how much RAM/CPU to lend,
+            sealed VM setup, Available). Keep the Mac plugged in while lending.
           </p>
 
           <ol className="setup-list">
@@ -229,8 +225,8 @@ export default function LendPage() {
               <div className="setup-body">
                 <h3>Register this Mac</h3>
                 <p>
-                  Creates a listing for your account and a host token Bay Host
-                  uses to stay signed in.
+                  Creates your Borrow listing and a host token. Bay Host uses
+                  that token so the app can stay signed in (not your password).
                 </p>
                 <div className="actions">
                   <button type="button" className="btn primary" onClick={register}>
@@ -251,11 +247,12 @@ export default function LendPage() {
             <li className="setup-item">
               <StepNum n={2} state={setup.step2} />
               <div className="setup-body">
-                <h3>Start Bay Host</h3>
+                <h3>Open Bay Host</h3>
                 <p>
-                  Download the Mac app (Apple Silicon). Unzip → drag to
-                  Applications → first open: Right-click → Open. Paste your
-                  token, then leave Host running while you lend.
+                  Download the Mac app (Apple Silicon). Unzip → Applications →
+                  first open: Right-click → Open. Paste your token, pick how
+                  much to lend, finish Tailscale / VM setup in the app, then
+                  Available.
                 </p>
                 <div className="actions">
                   <a
@@ -267,16 +264,12 @@ export default function LendPage() {
                     Download Bay Host
                   </a>
                   <a className="btn" href="http://127.0.0.1:3410">
-                    Open Host setup
+                    Open Host cockpit
                   </a>
                 </div>
                 <p className="muted" style={{ marginTop: "0.75rem", fontSize: "0.9rem" }}>
-                  Also install{" "}
-                  <a href="https://tailscale.com/download/mac" target="_blank" rel="noreferrer">
-                    Tailscale
-                  </a>
-                  . In Host: API URL defaults to production — paste token → Save
-                  → Available. Optional: Open at Login.
+                  Menu bar shows Bay · on / busy / pause while Host is running.
+                  Optional: Open at Login inside the app.
                 </p>
                 <details style={{ marginTop: "0.75rem" }}>
                   <summary className="muted" style={{ cursor: "pointer", fontSize: "0.9rem" }}>
@@ -288,89 +281,15 @@ pnpm --filter @bay/host start
                 </details>
               </div>
             </li>
-
-            <li className="setup-item">
-              <StepNum n={3} state={setup.step3} />
-              <div className="setup-body">
-                <h3>Connect Tailscale</h3>
-                <p>
-                  Friends reach your Mac without being on the same Wi‑Fi.
-                  Install Tailscale, sign in, then recheck in Host.
-                </p>
-                <div className="actions">
-                  <a
-                    className="btn"
-                    href="https://tailscale.com/download/mac"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Get Tailscale
-                  </a>
-                </div>
-                {status && (
-                  <div className="check-pills">
-                    <span className="pill">
-                      <i className={`dot ${status.tailscale ? "online" : ""}`} />
-                      {status.tailscale ? "Tailscale connected" : "Tailscale not connected"}
-                    </span>
-                    <span className="pill">
-                      <i className={`dot ${status.online ? "online" : ""}`} />
-                      {status.online ? "Host online" : "Host offline"}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </li>
-
-            <li className="setup-item">
-              <StepNum n={4} state={setup.step4} />
-              <div className="setup-body">
-                <h3>Go Available</h3>
-                <p>
-                  Schedule defaults to <strong>always open</strong>. Flip
-                  sharing on and your Mac appears on Borrow.
-                </p>
-                <div className="actions">
-                  <button
-                    type="button"
-                    className="btn primary"
-                    onClick={toggleSharing}
-                    disabled={!host}
-                  >
-                    {status?.sharing === "off" || !status
-                      ? "Turn Available on"
-                      : "Pause sharing"}
-                  </button>
-                </div>
-              </div>
-            </li>
           </ol>
 
           <details className="setup-details">
-            <summary>Optional: sealed Linux VM (stronger isolation)</summary>
+            <summary>Sealed Linux VM</summary>
             <p className="meta">
-              Default is folder sandbox under <code>~/.bay/sandbox</code>. VM
-              mode runs each job in a disposable Linux guest via Tart — needs
-              Apple Silicon and about <strong>40 GB free storage</strong> (not
-              RAM) for the golden image.
-            </p>
-            <p className="meta" style={{ marginTop: "0.75rem" }}>
-              Renters sign into <em>their</em> Claude/Codex in Yep. Your Keychain
-              is not used.
-            </p>
-            <pre className="setup-code">{`# 1) Install Tart (once)
-brew install cirruslabs/cli/tart cirruslabs/cli/sshpass
-
-# 2) Build golden image (once, takes a while)
-cd /path/to/bay
-pnpm --filter @bay/host guest:build
-
-# 3) Restart Host in VM mode
-export BAY_SANDBOX_BACKEND=vm
-pnpm --filter @bay/host start`}</pre>
-            <p className="muted" style={{ fontSize: "0.9rem", margin: 0 }}>
-              Host’s Sandbox card should say “Sealed Linux VM ready.” Same
-              Borrow → Start → Connect flow for renters.
+              In Bay Host → Isolation → <strong>Sealed Linux VM</strong>, then
+              <strong> Install Tart + build golden image</strong>. No Terminal
+              required when using the app. Needs Apple Silicon and roughly{" "}
+              <strong>40 GB free storage</strong>.
             </p>
             {status?.backend === "vm" && (
               <div className="check-pills">
@@ -438,6 +357,21 @@ pnpm --filter @bay/host start`}</pre>
                     : ""}
                 </p>
               )}
+              <div className="actions" style={{ marginTop: "0.75rem" }}>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={toggleSharing}
+                  disabled={!host}
+                >
+                  {status.sharing === "off"
+                    ? "Turn Available on (website)"
+                    : "Pause sharing (website)"}
+                </button>
+                <a className="btn primary" href="http://127.0.0.1:3410">
+                  Manage in Host
+                </a>
+              </div>
             </>
           )}
         </div>

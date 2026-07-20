@@ -5,7 +5,12 @@ import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { collectHealth, doctorText } from "./health.js";
-import { loadConfig, saveConfig } from "./config.js";
+import {
+  loadConfig,
+  saveConfig,
+  applyLendPreset,
+  LEND_PRESETS,
+} from "./config.js";
 import {
   provisionSession,
   wipeSession,
@@ -13,8 +18,10 @@ import {
   injectGuestCredentials,
   startGuestClaudeAuth,
   submitGuestClaudeAuthCode,
+  getSandboxBackend,
 } from "./sandbox.js";
 import { loginItemStatus, setLoginItem } from "./login-item.js";
+import { getVmSetupStatus, startVmSetup } from "./vm-setup.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const cmd = process.argv[2] || "serve";
@@ -395,15 +402,47 @@ if (cmd === "serve") {
       doctor: doctorText(),
       loginItem: loginItemStatus(),
       bundledApp: Boolean(process.env.BAY_BUNDLED_APP),
+      lendPresets: LEND_PRESETS,
+      sandboxBackendEffective: getSandboxBackend(),
+      vmSetup: getVmSetupStatus(),
+      menuStatus:
+        cfg.sharing === "busy"
+          ? "busy"
+          : cfg.sharing === "available"
+            ? "available"
+            : "paused",
     });
   });
   app.post("/api/config", async (c) => {
     const body = await c.req.json();
     const cfg = loadConfig();
-    cfg.apiUrl = body.apiUrl || cfg.apiUrl;
-    cfg.hostToken = body.hostToken || cfg.hostToken;
+    if (body.apiUrl != null) cfg.apiUrl = body.apiUrl;
+    if (body.hostToken != null) cfg.hostToken = body.hostToken;
+    if (body.sandboxBackend === "vm" || body.sandboxBackend === "folder") {
+      cfg.sandboxBackend = body.sandboxBackend;
+    }
+    if (body.lendPreset) {
+      applyLendPreset(cfg, body.lendPreset);
+    } else {
+      if (body.vmCpu != null) cfg.vmCpu = Number(body.vmCpu) || cfg.vmCpu;
+      if (body.vmMemoryMb != null) {
+        cfg.vmMemoryMb = Number(body.vmMemoryMb) || cfg.vmMemoryMb;
+      }
+    }
     saveConfig(cfg);
-    return c.json({ ok: true });
+    return c.json({ ok: true, config: cfg, sandboxBackendEffective: getSandboxBackend() });
+  });
+  app.get("/api/vm-setup", (c) => c.json(getVmSetupStatus()));
+  app.post("/api/vm-setup", async (c) => {
+    const body = await c.req.json().catch(() => ({}));
+    const cfg = loadConfig();
+    cfg.sandboxBackend = "vm";
+    saveConfig(cfg);
+    const result = startVmSetup({
+      installTart: body.installTart !== false,
+      buildGolden: body.buildGolden !== false,
+    });
+    return c.json(result, result.ok ? 200 : 400);
   });
   app.get("/api/login-item", (c) => c.json(loginItemStatus()));
   app.post("/api/login-item", async (c) => {
@@ -438,7 +477,9 @@ if (cmd === "serve") {
   serve({ fetch: app.fetch, port, hostname: "127.0.0.1" }, () => {
     console.log(`Bay Host UI: http://127.0.0.1:${port}`);
     console.log("Heartbeating every 15s…");
-    openBrowser(`http://127.0.0.1:${port}`);
+    if (process.env.BAY_HOST_NO_BROWSER !== "1") {
+      openBrowser(`http://127.0.0.1:${port}`);
+    }
   });
 
   loop();

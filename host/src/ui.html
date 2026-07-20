@@ -27,7 +27,7 @@
         min-height: 100vh;
       }
       main {
-        width: min(560px, calc(100% - 2rem));
+        width: min(580px, calc(100% - 2rem));
         margin: 0 auto;
         padding: 2rem 0 3rem;
       }
@@ -79,6 +79,10 @@
         margin-right: 0.4rem;
         margin-top: 0.4rem;
       }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
       button.secondary,
       a.btn.secondary {
         background: white;
@@ -105,21 +109,60 @@
         border: 1px solid var(--line);
         font-size: 0.82rem;
         line-height: 1.45;
-      }
-      details {
-        margin-top: 0.75rem;
-      }
-      details summary {
-        cursor: pointer;
-        font-weight: 600;
-        color: var(--ink);
-      }
-      code {
-        font-size: 0.85em;
+        max-height: 220px;
+        overflow: auto;
       }
       .hint {
         font-size: 0.9rem;
         margin-top: 0.65rem;
+      }
+      .presets {
+        display: grid;
+        gap: 0.6rem;
+        margin-top: 0.75rem;
+      }
+      .preset {
+        text-align: left;
+        width: 100%;
+        border-radius: 1rem;
+        border: 1px solid var(--line);
+        background: white;
+        color: var(--ink);
+        padding: 0.85rem 1rem;
+        margin: 0;
+      }
+      .preset.active {
+        border-color: var(--accent);
+        box-shadow: inset 0 0 0 1px var(--accent);
+      }
+      .preset b {
+        display: block;
+        margin-bottom: 0.2rem;
+      }
+      .preset span {
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+      .mode-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+      }
+      .banner {
+        border-radius: 1rem;
+        padding: 0.85rem 1rem;
+        background: white;
+        border: 1px solid var(--line);
+        font-weight: 600;
+      }
+      .banner.available {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .banner.busy {
+        border-color: var(--warn);
+        color: var(--warn);
       }
     </style>
   </head>
@@ -127,13 +170,16 @@
     <main>
       <h1>Bay Host</h1>
       <p>
-        Keep this window open while lending. Paste your token from the website
-        Lend page, connect Tailscale, then turn Available on.
+        Your lender cockpit. Paste the token from the Bay website, pick how much
+        to lend, then go Available. Keep this app running while friends borrow.
       </p>
+      <div id="statusBanner" class="banner">Checking…</div>
 
       <div class="card">
         <strong>1. Sign in</strong>
-        <p>Copy the host token from Bay → Lend, paste it here, and Save.</p>
+        <p>
+          On the website: Lend → Register this Mac → Copy token. Paste it here.
+        </p>
         <label>
           API URL
           <input
@@ -141,11 +187,6 @@
             placeholder="https://bay-api-production.up.railway.app"
           />
         </label>
-        <p class="hint">
-          Production default:
-          <code>https://bay-api-production.up.railway.app</code>
-          — use <code>http://127.0.0.1:8788</code> only for local API.
-        </p>
         <label>
           Host token
           <input id="hostToken" />
@@ -157,8 +198,8 @@
         <strong>2. Tailscale</strong>
         <p id="tsStatus">Checking…</p>
         <p class="hint">
-          Friends connect without the same Wi‑Fi. Install, sign in with the same
-          tailnet as your renters, then recheck.
+          Friends need Tailscale on the same tailnet (you invite/share your Mac).
+          Install, sign in, then recheck.
         </p>
         <a
           class="btn secondary"
@@ -171,35 +212,47 @@
       </div>
 
       <div class="card">
-        <strong>3. This Mac</strong>
+        <strong>3. How much to lend</strong>
+        <p class="hint" id="lendHint">
+          Caps apply to the sealed Linux VM guest. Your Mac keeps the rest
+          (plus macOS overhead).
+        </p>
+        <div class="presets" id="presets"></div>
+      </div>
+
+      <div class="card">
+        <strong>4. Isolation</strong>
+        <p id="sandboxStatus">Checking…</p>
+        <p class="hint" id="sandboxHint"></p>
+        <div class="mode-row">
+          <button type="button" class="secondary" id="modeFolder">
+            Folder sandbox
+          </button>
+          <button type="button" class="secondary" id="modeVm">
+            Sealed Linux VM
+          </button>
+        </div>
+        <div id="vmWizard" style="display: none; margin-top: 0.85rem">
+          <p class="hint">
+            Stronger isolation: disposable Ubuntu VM per job. Needs Apple Silicon
+            and free disk. One-time setup — then Host builds jobs automatically.
+          </p>
+          <button type="button" id="startVmSetup">
+            Install Tart + build golden image
+          </button>
+          <p class="hint" id="vmSetupDetail"></p>
+          <pre id="vmSetupLog" style="display: none"></pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <strong>5. This Mac</strong>
         <pre id="doctor">Loading…</pre>
         <p id="powerHint"></p>
       </div>
 
       <div class="card">
-        <strong>4. Sandbox</strong>
-        <p id="sandboxStatus">Checking…</p>
-        <p class="hint" id="sandboxHint"></p>
-        <details id="vmDetails">
-          <summary>Optional: sealed Linux VM</summary>
-          <p class="hint">
-            Stronger isolation: each job runs in a disposable Linux guest (Tart).
-            Needs Apple Silicon and ~40&nbsp;GB free <em>storage</em>. Renters
-            sign into their own Claude/Codex — your Keychain is not used.
-          </p>
-          <pre id="vmCommands">brew install cirruslabs/cli/tart cirruslabs/cli/sshpass
-cd /path/to/bay
-pnpm --filter @bay/host guest:build
-export BAY_SANDBOX_BACKEND=vm
-pnpm --filter @bay/host start</pre>
-          <p class="hint">
-            Full walkthrough is also on the website under Lend → “Optional: sealed Linux VM”.
-          </p>
-        </details>
-      </div>
-
-      <div class="card">
-        <strong>5. Sharing</strong>
+        <strong>6. Sharing</strong>
         <p id="shareStatus">Off</p>
         <p class="hint">
           When Available, friends can reserve this Mac on Borrow. Pause anytime.
@@ -208,11 +261,10 @@ pnpm --filter @bay/host start</pre>
       </div>
 
       <div class="card">
-        <strong>6. Open at Login</strong>
+        <strong>7. Open at Login</strong>
         <p id="loginItemStatus">Checking…</p>
         <p class="hint">
-          Start Bay Host when you log in so friends can reserve without you
-          opening Terminal. Requires the downloadable Bay Host.app.
+          Start Bay Host when you log in. Requires Bay Host.app (not Terminal).
         </p>
         <button id="toggleLoginItem" class="secondary">Enable Open at Login</button>
       </div>
@@ -226,11 +278,65 @@ pnpm --filter @bay/host start</pre>
         return res.json();
       }
 
+      function gb(mb) {
+        return (Number(mb) / 1024).toFixed(Number(mb) % 1024 === 0 ? 0 : 1);
+      }
+
+      function renderPresets(state) {
+        const box = document.getElementById("presets");
+        const presets = state.lendPresets || {};
+        const active = state.lendPreset || "balanced";
+        box.innerHTML = "";
+        for (const id of ["light", "balanced", "more"]) {
+          const p = presets[id];
+          if (!p) continue;
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "preset" + (active === id ? " active" : "");
+          btn.innerHTML =
+            "<b>" +
+            p.label +
+            " — " +
+            gb(p.vmMemoryMb) +
+            " GB RAM · " +
+            p.vmCpu +
+            " CPUs</b><span>" +
+            p.blurb +
+            ". Guest gets this; your Mac keeps the rest.</span>";
+          btn.onclick = async () => {
+            await api("/api/config", {
+              method: "POST",
+              body: JSON.stringify({ lendPreset: id }),
+            });
+            await refresh();
+          };
+          box.appendChild(btn);
+        }
+        document.getElementById("lendHint").textContent =
+          "Selected: guest gets " +
+          gb(state.vmMemoryMb) +
+          " GB RAM and " +
+          state.vmCpu +
+          " CPU cores. Folder mode ignores these caps.";
+      }
+
       async function refresh() {
         const state = await api("/api/state");
         document.getElementById("apiUrl").value = state.apiUrl || "";
         document.getElementById("hostToken").value = state.hostToken || "";
         document.getElementById("doctor").textContent = state.doctor;
+        renderPresets(state);
+
+        const banner = document.getElementById("statusBanner");
+        const ms = state.menuStatus || "paused";
+        banner.className = "banner " + ms;
+        banner.textContent =
+          ms === "available"
+            ? "● Available — friends can reserve"
+            : ms === "busy"
+              ? "● Busy — session running"
+              : "● Paused — not listed for Borrow";
+
         const ts = state.health;
         const el = document.getElementById("tsStatus");
         if (ts.tailscaleConnected) {
@@ -248,30 +354,52 @@ pnpm --filter @bay/host start</pre>
           ? "On charger — good for lending."
           : "Plug in your Mac while lending so it doesn’t sleep.";
 
+        const backend = state.sandboxBackendEffective || ts.sandboxBackend || "folder";
         const sb = document.getElementById("sandboxStatus");
         const hint = document.getElementById("sandboxHint");
-        const backend = ts.sandboxBackend || "folder";
+        const wizard = document.getElementById("vmWizard");
+        document.getElementById("modeFolder").className =
+          "secondary" + (backend === "folder" ? "" : "");
+        document.getElementById("modeVm").className =
+          "secondary" + (backend === "vm" ? "" : "");
         if (backend === "vm") {
+          wizard.style.display = "block";
           if (ts.tartAvailable && ts.goldenImageReady) {
             sb.innerHTML = '<span class="ok">✓ Sealed Linux VM ready</span>';
             hint.textContent =
-              "New reservations clone bay-golden, run inside the guest, then wipe the job VM.";
+              "New reservations clone bay-golden, run headless, then wipe the job VM.";
           } else if (!ts.tartAvailable) {
-            sb.innerHTML =
-              '<span class="bad">VM mode on — Tart missing</span>';
-            hint.innerHTML =
-              "Install Tart, then build the golden image (commands below). Or unset <code>BAY_SANDBOX_BACKEND</code> to use folder mode.";
+            sb.innerHTML = '<span class="bad">VM mode — Tart missing</span>';
+            hint.textContent =
+              "Click Install Tart + build golden image (needs Homebrew).";
           } else {
             sb.innerHTML =
-              '<span class="warn">VM mode on — golden image missing</span>';
-            hint.textContent =
-              "Run guest:build once, then restart Host. Expand the section below for commands.";
+              '<span class="warn">VM mode — golden image missing</span>';
+            hint.textContent = "Click Install Tart + build golden image once.";
           }
         } else {
-          sb.innerHTML = '<span class="ok">Folder sandbox</span> (default)';
+          wizard.style.display = "none";
+          sb.innerHTML = '<span class="ok">Folder sandbox</span>';
           hint.textContent =
-            "Jobs use ~/.bay/sandbox on this Mac. Expand below if you want sealed VM mode instead.";
+            "Simpler, weaker isolation. Switch to Sealed Linux VM for disposable guests.";
         }
+
+        const vs = state.vmSetup || {};
+        const detail = document.getElementById("vmSetupDetail");
+        const log = document.getElementById("vmSetupLog");
+        if (vs.running || vs.phase === "error" || vs.phase === "done") {
+          detail.innerHTML = vs.error
+            ? '<span class="bad">' + vs.error + "</span>"
+            : vs.detail || vs.phase;
+          if (vs.logTail && vs.logTail.length) {
+            log.style.display = "block";
+            log.textContent = vs.logTail.join("\n");
+            log.scrollTop = log.scrollHeight;
+          }
+        } else {
+          detail.textContent = "";
+        }
+        document.getElementById("startVmSetup").disabled = Boolean(vs.running);
 
         document.getElementById("shareStatus").textContent =
           state.sharing === "available"
@@ -289,6 +417,7 @@ pnpm --filter @bay/host start</pre>
           liEl.innerHTML = '<span class="ok">✓ Opens at login</span>';
           liBtn.textContent = "Disable Open at Login";
           liBtn.dataset.enabled = "1";
+          liBtn.disabled = false;
         } else if (!li.bundled && !state.bundledApp) {
           liEl.innerHTML =
             '<span class="warn">Download Bay Host.app to enable</span>';
@@ -318,6 +447,28 @@ pnpm --filter @bay/host start</pre>
         await api("/api/sharing", { method: "POST" });
         await refresh();
       };
+      document.getElementById("modeFolder").onclick = async () => {
+        await api("/api/config", {
+          method: "POST",
+          body: JSON.stringify({ sandboxBackend: "folder" }),
+        });
+        await refresh();
+      };
+      document.getElementById("modeVm").onclick = async () => {
+        await api("/api/config", {
+          method: "POST",
+          body: JSON.stringify({ sandboxBackend: "vm" }),
+        });
+        await refresh();
+      };
+      document.getElementById("startVmSetup").onclick = async () => {
+        const res = await api("/api/vm-setup", {
+          method: "POST",
+          body: JSON.stringify({ installTart: true, buildGolden: true }),
+        });
+        if (res.error) alert(res.error);
+        await refresh();
+      };
       document.getElementById("toggleLoginItem").onclick = async () => {
         const btn = document.getElementById("toggleLoginItem");
         const currentlyOn = btn.dataset.enabled === "1";
@@ -329,7 +480,7 @@ pnpm --filter @bay/host start</pre>
         await refresh();
       };
       refresh();
-      setInterval(refresh, 4000);
+      setInterval(refresh, 3000);
     </script>
   </body>
 </html>

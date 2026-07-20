@@ -1,12 +1,19 @@
 import * as folder from "./sandbox-folder.js";
 import * as vm from "./sandbox-vm.js";
+import { loadConfig } from "./config.js";
 
 /**
- * BAY_SANDBOX_BACKEND=folder|vm (default: folder)
+ * Prefer BAY_SANDBOX_BACKEND env, else host.json sandboxBackend (default: folder).
  */
 export function getSandboxBackend() {
-  const raw = (process.env.BAY_SANDBOX_BACKEND || "folder").toLowerCase();
-  return raw === "vm" ? "vm" : "folder";
+  const fromEnv = (process.env.BAY_SANDBOX_BACKEND || "").toLowerCase();
+  if (fromEnv === "vm" || fromEnv === "folder") return fromEnv;
+  try {
+    const cfg = loadConfig();
+    return cfg.sandboxBackend === "vm" ? "vm" : "folder";
+  } catch {
+    return "folder";
+  }
 }
 
 export function ensureSandboxDirs() {

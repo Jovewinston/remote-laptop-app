@@ -28,7 +28,7 @@ Apple Silicon (arm64), unsigned friends builds — first launch: **Right-click �
 
 Also install [Tailscale](https://tailscale.com/download/mac) on both Macs (same tailnet).
 
-**Lender:** Hosted site → Lend → register → copy token → open Bay Host → paste token → Available (optional: Open at Login).  
+**Lender:** Website → Lend → register → copy token → **Bay Host.app** (menu bar + cockpit): paste token, pick Light/Balanced/More RAM·CPU, Tailscale, optional sealed VM wizard, Available.  
 **Renter:** Borrow → Reserve → Start → Connect (`bay://` opens Bay Connect).
 
 Build locally: `pnpm package:macos` → zips in `dist/macos/`. Publish with `gh release create`.
