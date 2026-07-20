@@ -8,12 +8,40 @@ Invite-only marketplace to **borrow a friend's Mac** for **Claude Code** or **Co
 
 Not the same as [Airlift](https://github.com/ojaskandy/airlift) — inspired by it, built as a new product with listings, schedules, and sandbox wipe.
 
-## Quick start
+## Hosted MVP (production)
+
+| Service | URL |
+|---------|-----|
+| Web | https://bay-web-production-7890.up.railway.app |
+| API | https://bay-api-production.up.railway.app |
+
+Invite codes (seeded): `BAY-FRIENDS` or `BAY-DEMO`.
+
+### Install the Mac apps (no git clone)
+
+Apple Silicon (arm64), unsigned friends builds — first launch: **Right-click → Open**.
+
+| App | Who | Download |
+|-----|-----|----------|
+| **Bay Host** | Lender | [Bay-Host-arm64.zip](https://github.com/Jovewinston/remote-laptop-app/releases/latest/download/Bay-Host-arm64.zip) |
+| **Bay Connect** | Renter | [Bay-Connect-arm64.zip](https://github.com/Jovewinston/remote-laptop-app/releases/latest/download/Bay-Connect-arm64.zip) |
+
+Also install [Tailscale](https://tailscale.com/download/mac) on both Macs (same tailnet).
+
+**Lender:** Hosted site → Lend → register → copy token → open Bay Host → paste token → Available (optional: Open at Login).  
+**Renter:** Borrow → Reserve → Start → Connect (`bay://` opens Bay Connect).
+
+Build locally: `pnpm package:macos` → zips in `dist/macos/`. Publish with `gh release create`.
+
+For local API only: `export BAY_API_URL=http://127.0.0.1:8788`
+
+## Quick start (local)
 
 ```bash
 pnpm install
 pnpm --filter @bay/shared build
 pnpm db:seed
+export BAY_API_URL=http://127.0.0.1:8788   # Host/Connect → local API
 pnpm dev:api    # http://127.0.0.1:8788
 pnpm dev:web    # http://127.0.0.1:3200
 # or: bash scripts/dev.sh
@@ -34,7 +62,7 @@ pnpm --filter @bay/host start
 pnpm --filter @bay/host run doctor   # optional CLI health dump
 ```
 
-3. In the Host UI: paste token → **Install Tailscale** if needed → wait for ✓ Connected → **Turn Available on**  
+3. In the Host UI: set API URL (prod or local) → paste token → **Install Tailscale** if needed → wait for ✓ Connected → **Turn Available on**  
 4. Keep the Mac **plugged in** (lid closed usually sleeps the machine)
 
 Your Mac then appears as a Borrow card (chip, RAM, disk, online, charger, free hours).

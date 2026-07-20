@@ -109,3 +109,18 @@ export interface SessionConnectInfo {
 
 export const DEFAULT_COCKPIT_PORT = 3400;
 export const HEARTBEAT_STALE_MS = 90_000;
+
+/** Hosted control-plane API (Railway). Override with BAY_API_URL for local dev. */
+export const DEFAULT_BAY_API_URL =
+  "https://bay-api-production.up.railway.app";
+
+/** Hosted Bay website (Railway). */
+export const DEFAULT_BAY_WEB_URL =
+  "https://bay-web-production-7890.up.railway.app";
+
+/** GitHub repo that publishes macOS app zips. */
+export const BAY_GITHUB_REPO = "Jovewinston/remote-laptop-app";
+
+/** Default download URLs for friends-first unsigned macOS apps (arm64). */
+export const DEFAULT_BAY_DOWNLOAD_HOST_URL = `https://github.com/${BAY_GITHUB_REPO}/releases/latest/download/Bay-Host-arm64.zip`;
+export const DEFAULT_BAY_DOWNLOAD_CONNECT_URL = `https://github.com/${BAY_GITHUB_REPO}/releases/latest/download/Bay-Connect-arm64.zip`;

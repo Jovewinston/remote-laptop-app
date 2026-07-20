@@ -10,7 +10,8 @@
     "dev:host": "pnpm --filter @bay/host start",
     "doctor": "pnpm --filter @bay/host run doctor",
     "build": "pnpm -r run build",
-    "db:seed": "pnpm --filter @bay/api seed"
+    "db:seed": "pnpm --filter @bay/api seed",
+    "package:macos": "bash scripts/package-macos.sh"
   },
   "engines": {
     "node": ">=22"

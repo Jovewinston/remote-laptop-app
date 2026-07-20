@@ -3,7 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
-import { api, getToken } from "@/lib/api";
+import {
+  api,
+  bayApiBaseUrl,
+  bayDownloadConnectUrl,
+  getToken,
+} from "@/lib/api";
 import type { HostPublic, Reservation } from "@bay/shared";
 
 type ConnectInfo = {
@@ -275,11 +280,9 @@ export default function SessionPage() {
       window.open(connect.openUrl, "_blank", "noopener,noreferrer");
       return;
     }
-    const cmd = `pnpm --filter @bay/connect start -- ${reservation.id} ${connect.connectToken}`;
-    void navigator.clipboard?.writeText(cmd).catch(() => undefined);
     window.location.href = connect.bayUrl;
     alert(
-      `Bay Connect link opened (if installed).\n\nOr run this in a terminal (copied if allowed):\n\n${cmd}`
+      `Bay Connect opened (if installed).\n\nFirst time? Download Bay Connect (Apple Silicon), unzip → Applications → Right-click → Open.\nThen click Connect again.\n\n${bayDownloadConnectUrl()}`
     );
   }
 
@@ -729,6 +732,14 @@ export default function SessionPage() {
               <button type="button" className="btn" disabled={busy} onClick={end}>
                 End session
               </button>
+              <a
+                className="btn"
+                href={bayDownloadConnectUrl()}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Download Bay Connect
+              </a>
             </>
           )}
           {(reservation.status === "ended" ||
@@ -760,8 +771,11 @@ export default function SessionPage() {
                 fontSize: "0.85rem",
               }}
             >
-{`# Or run manually:
-pnpm --filter @bay/connect start -- ${reservation.id} ${connect.connectToken}
+{`# Install Bay Connect once: ${bayDownloadConnectUrl()}
+# Then click Connect (opens bay://${reservation.id}…)
+
+# Advanced (from source):
+BAY_API_URL=${bayApiBaseUrl()} pnpm --filter @bay/connect start -- ${reservation.id} ${connect.connectToken}
 
 # Tunnel target: ${connect.sshTarget} port ${connect.remotePort}
 # Then open: ${connect.openUrl}`}

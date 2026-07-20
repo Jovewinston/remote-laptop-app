@@ -6,9 +6,9 @@
  *   bay-connect 'bay://connect/<id>?token=...'
  */
 import { spawn, spawnSync } from "node:child_process";
-import { DEFAULT_COCKPIT_PORT } from "@bay/shared";
+import { DEFAULT_BAY_API_URL, DEFAULT_COCKPIT_PORT } from "@bay/shared";
 
-const API = process.env.BAY_API_URL ?? "http://127.0.0.1:8788";
+const API = process.env.BAY_API_URL ?? DEFAULT_BAY_API_URL;
 
 function parseArgs(argv) {
   const raw = argv[2] || "";
@@ -19,6 +19,15 @@ function parseArgs(argv) {
     return { id, connectToken: u.searchParams.get("token") || argv[3] };
   }
   return { id: argv[2], connectToken: argv[3] };
+}
+
+function guiAlert(message) {
+  if (process.platform !== "darwin") return;
+  spawnSync(
+    "osascript",
+    ["-e", `display alert "Bay Connect" message ${JSON.stringify(message)}`],
+    { encoding: "utf8" }
+  );
 }
 
 async function main() {
@@ -32,8 +41,10 @@ async function main() {
   console.log("Checking network…");
   const ts = spawnSync("tailscale", ["status"], { encoding: "utf8" });
   if (ts.status !== 0) {
-    console.error("Tailscale is not connected on this Mac.");
-    console.error("Install & sign in: https://tailscale.com/download/mac");
+    const msg =
+      "Tailscale is not connected on this Mac. Install & sign in: https://tailscale.com/download/mac";
+    console.error(msg);
+    guiAlert(msg);
     process.exit(1);
   }
 
@@ -42,7 +53,9 @@ async function main() {
   );
   const data = await res.json();
   if (!res.ok) {
-    console.error(data.error || "Could not get connect info");
+    const msg = data.error || "Could not get connect info";
+    console.error(msg);
+    guiAlert(msg);
     process.exit(1);
   }
 

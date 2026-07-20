@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
-import { api, getToken } from "@/lib/api";
+import { api, bayDownloadHostUrl, getToken } from "@/lib/api";
 import type { HostPublic } from "@bay/shared";
 
 type MineHost = HostPublic & {
@@ -253,21 +253,39 @@ export default function LendPage() {
               <div className="setup-body">
                 <h3>Start Bay Host</h3>
                 <p>
-                  Host watches health, prepares sandboxes when someone borrows,
-                  and talks to Bay. Run this in a terminal on this Mac:
+                  Download the Mac app (Apple Silicon). Unzip → drag to
+                  Applications → first open: Right-click → Open. Paste your
+                  token, then leave Host running while you lend.
                 </p>
-                <pre className="setup-code">{`cd /path/to/bay
-pnpm --filter @bay/host start
-# opens http://127.0.0.1:3410`}</pre>
                 <div className="actions">
-                  <a className="btn primary" href="http://127.0.0.1:3410">
+                  <a
+                    className="btn primary"
+                    href={bayDownloadHostUrl()}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Download Bay Host
+                  </a>
+                  <a className="btn" href="http://127.0.0.1:3410">
                     Open Host setup
                   </a>
                 </div>
                 <p className="muted" style={{ marginTop: "0.75rem", fontSize: "0.9rem" }}>
-                  In Host: paste your token → Save. Leave Host running while you
-                  lend.
+                  Also install{" "}
+                  <a href="https://tailscale.com/download/mac" target="_blank" rel="noreferrer">
+                    Tailscale
+                  </a>
+                  . In Host: API URL defaults to production — paste token → Save
+                  → Available. Optional: Open at Login.
                 </p>
+                <details style={{ marginTop: "0.75rem" }}>
+                  <summary className="muted" style={{ cursor: "pointer", fontSize: "0.9rem" }}>
+                    Advanced: run from source
+                  </summary>
+                  <pre className="setup-code">{`cd /path/to/bay
+pnpm --filter @bay/host start
+# opens http://127.0.0.1:3410`}</pre>
+                </details>
               </div>
             </li>
 

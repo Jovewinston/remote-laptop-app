@@ -14,6 +14,7 @@ import {
   startGuestClaudeAuth,
   submitGuestClaudeAuthCode,
 } from "./sandbox.js";
+import { loginItemStatus, setLoginItem } from "./login-item.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const cmd = process.argv[2] || "serve";
@@ -392,6 +393,8 @@ if (cmd === "serve") {
       ...cfg,
       health,
       doctor: doctorText(),
+      loginItem: loginItemStatus(),
+      bundledApp: Boolean(process.env.BAY_BUNDLED_APP),
     });
   });
   app.post("/api/config", async (c) => {
@@ -401,6 +404,12 @@ if (cmd === "serve") {
     cfg.hostToken = body.hostToken || cfg.hostToken;
     saveConfig(cfg);
     return c.json({ ok: true });
+  });
+  app.get("/api/login-item", (c) => c.json(loginItemStatus()));
+  app.post("/api/login-item", async (c) => {
+    const body = await c.req.json().catch(() => ({}));
+    const enabled = Boolean(body.enabled);
+    return c.json(setLoginItem(enabled));
   });
   app.post("/api/sharing", async (c) => {
     const cfg = loadConfig();

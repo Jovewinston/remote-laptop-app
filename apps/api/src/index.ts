@@ -985,13 +985,27 @@ app.get("/audit", requireUser, (c) => {
   return c.json({ events: rows });
 });
 
-// Public download stub page helper
-app.get("/download/host", (c) => {
-  return c.json({
-    message: "Install the Bay Host app from the repo: pnpm --filter @bay/host start",
-    script: "pnpm --filter @bay/host start",
-  });
-});
+function downloadMeta(kind: "host" | "connect") {
+  const hostUrl =
+    process.env.BAY_DOWNLOAD_HOST_URL ??
+    "https://github.com/Jovewinston/remote-laptop-app/releases/latest/download/Bay-Host-arm64.zip";
+  const connectUrl =
+    process.env.BAY_DOWNLOAD_CONNECT_URL ??
+    "https://github.com/Jovewinston/remote-laptop-app/releases/latest/download/Bay-Connect-arm64.zip";
+  const url = kind === "host" ? hostUrl : connectUrl;
+  return {
+    kind,
+    arch: "arm64",
+    version: process.env.BAY_APP_VERSION ?? "0.1.0",
+    url,
+    filename: kind === "host" ? "Bay-Host-arm64.zip" : "Bay-Connect-arm64.zip",
+    installNotes:
+      "Unzip → drag to Applications → first launch: Right-click → Open (unsigned friends build). Tailscale required.",
+  };
+}
+
+app.get("/download/host", (c) => c.json(downloadMeta("host")));
+app.get("/download/connect", (c) => c.json(downloadMeta("connect")));
 
 serve({ fetch: app.fetch, port: PORT, hostname: HOSTNAME }, () => {
   console.log(`Bay API listening on http://${HOSTNAME}:${PORT}`);

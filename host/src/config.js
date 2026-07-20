@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
+import { DEFAULT_BAY_API_URL } from "@bay/shared";
 
 const DIR = path.join(os.homedir(), ".bay");
 const FILE = path.join(DIR, "host.json");
@@ -10,7 +11,7 @@ export function loadConfig() {
     return JSON.parse(fs.readFileSync(FILE, "utf8"));
   } catch {
     return {
-      apiUrl: process.env.BAY_API_URL ?? "http://127.0.0.1:8788",
+      apiUrl: process.env.BAY_API_URL ?? DEFAULT_BAY_API_URL,
       hostToken: process.env.BAY_HOST_TOKEN ?? "",
       displayName: "",
       sharing: "off",
